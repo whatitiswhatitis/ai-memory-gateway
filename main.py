@@ -1152,7 +1152,9 @@ async def chat_completions(request: Request):
     debug_keys = {k: v for k, v in body.items() if k in ('reasoning_effort', 'google', 'reasoning')}
     if debug_keys:
         print(f"📡 推理字段: {debug_keys}", flush=True)
-    
+    # 清洗messages里的非标准字段，避免部分上游API拒绝
+    _ALLOWED = {"role", "content", "name", "tool_calls", "tool_call_id"}
+    body["messages"] = [{k: v for k, v in m.items() if k in _ALLOWED} for m in body.get("messages", [])]
     if is_stream:
         return StreamingResponse(
             stream_and_capture(headers, body, session_id, user_message, model, original_messages, skip_conversation_log, tool_messages),
