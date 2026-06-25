@@ -968,8 +968,12 @@ async def chat_completions(request: Request):
         )
     
     body = await request.json()
-    messages = body.get("messages", [])
     
+    
+    # 清洗messages里的非标准字段，避免部分上游API拒绝
+    _ALLOWED = {"role", "content", "name", "tool_calls", "tool_call_id"}
+    body["messages"] = [{k: v for k, v in m.items() if k in _ALLOWED} for m in body.get("messages", [])]
+    messages = body["messages"]    # 用清洗后的
     # ---------- 检测是否应跳过对话存储 ----------
     # 客户端通过header显式声明（如标题生成等辅助请求）
     skip_conversation_log = request.headers.get("X-Skip-Conversation-Log", "").lower() == "true"
